@@ -262,29 +262,30 @@ with tab_manage:
     else:
         selected_id = st.selectbox("Pilih PO berdasarkan ID", df["id"])
 
-    if selected_id:
-        order = df[df["id"] == selected_id].iloc[0]
-    
-        st.write(f"**Nomor PO:** {order['Doc. Num']}")
-        st.write(f"**Doc. Group:** {order['Doc. Group']}")
-        st.write(f"**Supplier (BP):** {order['BP']}")
-        st.write(f"**Status:** {order['Status']}")
-        st.write(f"**Tanggal PO:** {order['Date']}")
-        st.write(f"**Ref. Num:** {order['Ref. Num']}")
-        st.write(f"**Currency:** {order['Currency']}")
-        st.write(f"**Doc. Total:** {order['Doc. Total']}")
-        st.write(f"**User:** {order['User']}")
-        st.write(f"**Created Date:** {order['Created Date']}")
-        st.write(f"**Control:** {order['Control']}")
-    
-        new_status = st.selectbox("Update status PO", ["Menunggu", "Sudah Datang", "Dibatalkan"], index=["Menunggu", "Sudah Datang", "Dibatalkan"].index(order["Status"]))
-    
-        if st.button("Simpan perubahan status"):
-            update_status(selected_id, new_status)
-            st.success("Status berhasil diperbarui.")
-            st.experimental_rerun()
-    
-        if st.button("Hapus PO ini"):
-            delete_order(selected_id)
-            st.success("PO berhasil dihapus.")
-            st.experimental_rerun()
+if selected_id:
+    order = df[df["id"] == selected_id].iloc[0]
+
+    st.write(f"**Nomor PO:** {order['Doc. Num']}")
+    st.write(f"**Doc. Group:** {order['Doc. Group']}")
+    st.write(f"**Supplier (BP):** {order['BP']}")
+    st.write(f"**Status:** {order['Status']}")
+    st.write(f"**Tanggal PO:** {order['Date']}")
+    st.write(f"**Ref. Num:** {order['Ref. Num']}")
+    st.write(f"**Currency:** {order['Currency']}")
+    st.write(f"**Doc. Total:** {order['Doc. Total']}")
+    st.write(f"**User:** {order['User']}")
+    st.write(f"**Created Date:** {order['Created Date']}")
+    st.write(f"**Control:** {order['Control']}")
+
+    new_status = st.selectbox("Update status PO", ["Menunggu", "Sudah Datang", "Dibatalkan"], index=["Menunggu", "Sudah Datang", "Dibatalkan"].index(order["Status"]))
+
+    if st.button("Simpan perubahan status"):
+        update_status(selected_id, new_status)
+        st.success("Status berhasil diperbarui.")
+        st.experimental_rerun()
+
+    if st.button("Hapus PO ini"):
+        delete_order(selected_id)
+        st.success("PO berhasil dihapus.")
+        st.experimental_rerun()
+
