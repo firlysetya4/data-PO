@@ -52,7 +52,7 @@ def add_order(values):
         conn.execute("""
             INSERT INTO purchase_orders
             ("Doc_Num", "Doc_Group", "BP", "Status", "Date", "Ref_Num",
-             "Currency", "Doc_Total", "User", "Created Date", "Control",
+            "Doc_Total", "User", "Created Date", "Control",
              "eta_start", "eta_end", "reminder_date", "notes")
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, values)
@@ -140,7 +140,6 @@ with tab_add:
             urgency = st.radio("Prioritas", ["Urgent", "Normal"], horizontal=True)
             notes = st.text_area("Catatan")
             ref_num = st.text_input("Ref_Num")
-            currency = st.text_input("Currency", value="IDR")
             doc_total = st.text_input("Doc_Total")
             user = st.text_input("User")
             control = st.text_input("Control")
@@ -166,7 +165,6 @@ with tab_add:
                     "Menunggu",
                     po_date.isoformat(),
                     ref_num.strip(),
-                    currency.strip(),
                     doc_total.strip(),
                     user.strip(),
                     datetime.now().isoformat(timespec="seconds"),
@@ -190,7 +188,7 @@ with tab_add:
             df_excel.columns = df_excel.columns.str.strip()
 
             mandatory_cols = ["Doc_Num", "Doc_Group", "BP", "Status", "Date", "Ref_Num",
-                              "Currency", "Doc_Total", "User", "Created Date", "Control"]
+                              "Doc_Total", "User", "Created Date", "Control"]
 
 
             missing_cols = [col for col in mandatory_cols if col not in df_excel.columns]
@@ -207,7 +205,6 @@ with tab_add:
                         supplier = str(row["BP"]).strip()
                         status = str(row["Status"]).strip()
                         ref_num = str(row["Ref_Num"]).strip()
-                        currency = str(row["Currency"]).strip()
                         doc_total = str(row["Doc_Total"]).strip()
                         user = str(row["User"]).strip()
                         control = str(row["Control"]).strip()
@@ -244,7 +241,7 @@ with tab_add:
                         
                         add_order((
                             po_number, doc_group, supplier, status, po_date.isoformat(),
-                            ref_num, currency, doc_total, user, created_date_iso,
+                            ref_num, doc_total, user, created_date_iso,
                             control, eta_start.isoformat(), eta_end.isoformat(), reminder_date.isoformat(), notes
                         ))
 
@@ -291,7 +288,6 @@ with tab_manage:
             st.write(f"**Status:** {order['Status']}")
             st.write(f"**Date (Tanggal PO):** {order['Date']}")
             st.write(f"**Ref. Num:** {order['Ref_Num']}")
-            st.write(f"**Currency:** {order['Currency']}")
             st.write(f"**Doc. Total:** {order['Doc_Total']}")
             st.write(f"**User:** {order['User']}")
             st.write(f"**Created Date:** {order['Created Date']}")
