@@ -4,6 +4,72 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 import streamlit as st
 
+with st.expander("📁 Upload data PO dari file Excel (.xls / .xlsx)"):
+    uploaded_file = st.file_uploader("Pilih file Excel", type=["xls", "xlsx"])
+    if uploaded_file:
+        try:
+            df_excel = pd.read_excel(uploaded_file)
+
+            mandatory_cols = ["po_number", "supplier", "item_name", "quantity", "unit", "po_date", "urgency"]
+            missing_cols = [col for col in mandatory_cols if col not in df_excel.columns.str.lower()]
+            if missing_cols:
+                st.error(f"File Excel harus mengandung kolom: {', '.join(mandatory_cols)}. Kolom hilang: {', '.join(missing_cols)}")
+            else:
+                # Lakukan normalisasi nama kolom menjadi lowercase untuk kemudahan akses
+                df_excel.columns = df_excel.columns.str.lower()
+
+                # Proses tiap baris untuk dimasukkan ke DB
+                success_count = 0
+                error_rows = []
+                for i, row in df_excel.iterrows():
+                    try:
+                        # Baca dan validasi data penting
+                        po_number = str(row["po_number"]).strip()
+                        supplier = str(row["supplier"]).strip()
+                        item_name = str(row["item_name"]).strip()
+                        quantity = float(row["quantity"])
+                        unit = str(row["unit"]).strip() or "Unit"
+                        # Pastikan tanggal PO di-convert ke date
+                        po_date_val = row["po_date"]
+                        if isinstance(po_date_val, pd.Timestamp):
+                            po_date = po_date_val.date()
+                        elif isinstance(po_date_val, str):
+                            po_date = datetime.strptime(po_date_val[:10], "%Y-%m-%d").date()
+                        else:
+                            po_date = date_from_text(po_date_val)
+
+                        urgency = str(row["urgency"]).strip()
+                        notes = str(row.get("notes", "") or "")
+
+                        # Hitung ETA dan reminder sesuai urgensi
+                        if urgency.lower() == "urgent":
+                            eta_start = po_date + timedelta(days=10)
+                            eta_end = po_date + timedelta(days=14)
+                            reminder_date = po_date + timedelta(days=8)
+                        else:
+                            eta_start = po_date + timedelta(days=14)
+                            eta_end = po_date + timedelta(days=21)
+                            reminder_date = po_date + timedelta(days=12)
+
+                        add_order((
+                            po_number, supplier, item_name, quantity, unit,
+                            po_date.isoformat(), urgency,
+                            eta_start.isoformat(), eta_end.isoformat(), reminder_date.isoformat(),
+                            notes
+                        ))
+                        success_count += 1
+                    except Exception as e:
+                        error_rows.append((i + 2, str(e)))  # +2 untuk menyesuaikan dengan baris Excel (header+1)
+
+                st.success(f"Berhasil menambahkan {success_count} PO dari file Excel.")
+                if error_rows:
+                    st.error(f"Gagal memproses baris berikut (nomor baris Excel):")
+                    for err in error_rows:
+                        st.write(f"- Baris {err[0]}: {err[1]}")
+                st.experimental_rerun()
+        except Exception as e:
+            st.error(f"Gagal membaca file Excel: {e}")
+
 st.set_page_config(page_title="PO Tracker & Reminder", page_icon="📦", layout="wide")
 
 # Database tersimpan di folder aplikasi. Cocok untuk penggunaan lokal.
