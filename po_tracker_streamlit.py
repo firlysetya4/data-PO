@@ -17,27 +17,31 @@ def connect_db():
 
 def init_db():
     with connect_db() as conn:
+        # Hapus tabel lama dulu (jika ada)
+        conn.execute("DROP TABLE IF EXISTS purchase_orders")
+        # Buat tabel baru dengan skema terbaru
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS purchase_orders (
+            CREATE TABLE purchase_orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                "Doc_Num" TEXT NOT NULL,
-                "Doc_Group" TEXT,
-                "BP" TEXT,
-                "Status" TEXT NOT NULL,
-                "Date" TEXT NOT NULL,
-                "Ref_Num" TEXT,
-                "Currency" TEXT,
-                "Doc_Total" TEXT,
-                "User" TEXT,
-                "Created Date" TEXT NOT NULL,
-                "Control" TEXT,
-                "eta_start" TEXT,
-                "eta_end" TEXT,
-                "reminder_date" TEXT,
-                "notes" TEXT
+                doc_num TEXT NOT NULL,
+                doc_group TEXT,
+                bp TEXT,
+                status TEXT NOT NULL,
+                date TEXT NOT NULL,
+                ref_num TEXT,
+                currency TEXT,
+                doc_total TEXT,
+                user TEXT,
+                created_date TEXT NOT NULL,
+                control TEXT,
+                eta_start TEXT,
+                eta_end TEXT,
+                reminder_date TEXT,
+                notes TEXT
             )
         """)
         conn.commit()
+
 
 def fetch_orders():
     with connect_db() as conn:
