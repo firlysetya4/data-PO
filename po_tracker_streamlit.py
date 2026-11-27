@@ -31,7 +31,7 @@ def init_db():
                 ref_num TEXT,
                 doc_total TEXT,
                 user TEXT,
-                reated_date TEXT,
+                Created_Date TEXT,
                 control TEXT,
                 eta_start TEXT,
                 eta_end TEXT,
