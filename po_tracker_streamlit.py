@@ -20,14 +20,14 @@ def init_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS purchase_orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                "Doc. Num" TEXT NOT NULL,
-                "Doc. Group" TEXT,
+                "Doc_Num" TEXT NOT NULL,
+                "Doc_Group" TEXT,
                 "BP" TEXT,
                 "Status" TEXT NOT NULL,
                 "Date" TEXT NOT NULL,
-                "Ref. Num" TEXT,
+                "Ref_Num" TEXT,
                 "Currency" TEXT,
-                "Doc. Total" TEXT,
+                "Doc_Total" TEXT,
                 "User" TEXT,
                 "Created Date" TEXT NOT NULL,
                 "Control" TEXT,
@@ -48,8 +48,8 @@ def add_order(values):
     with connect_db() as conn:
         conn.execute("""
             INSERT INTO purchase_orders
-            ("Doc. Num", "Doc. Group", "BP", "Status", "Date", "Ref. Num",
-             "Currency", "Doc. Total", "User", "Created Date", "Control",
+            ("Doc_Num", "Doc_Group", "BP", "Status", "Date", "Ref_Num",
+             "Currency", "Doc_Total", "User", "Created Date", "Control",
              "eta_start", "eta_end", "reminder_date", "notes")
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, values)
@@ -128,7 +128,7 @@ with tab_add:
         col1, col2 = st.columns(2)
         with col1:
             po_number = st.text_input("Nomor PO *", placeholder="Contoh: PO-2026-001")
-            doc_group = st.text_input("Doc. Group")
+            doc_group = st.text_input("Doc_Group")
             supplier = st.text_input("Nama supplier *")
             quantity = st.number_input("Qty *", min_value=0.01, value=1.0, step=1.0)
             unit = st.text_input("Satuan", value="Kg")
@@ -136,9 +136,9 @@ with tab_add:
             po_date = st.date_input("Tanggal PO *", value=today)
             urgency = st.radio("Prioritas", ["Urgent", "Normal"], horizontal=True)
             notes = st.text_area("Catatan")
-            ref_num = st.text_input("Ref. Num")
+            ref_num = st.text_input("Ref_Num")
             currency = st.text_input("Currency", value="IDR")
-            doc_total = st.text_input("Doc. Total")
+            doc_total = st.text_input("Doc_Total")
             user = st.text_input("User")
             control = st.text_input("Control")
 
@@ -186,8 +186,8 @@ with tab_add:
             # Normalisasi kolom
             df_excel.columns = df_excel.columns.str.strip()
 
-            mandatory_cols = ["Doc. Num", "Doc. Group", "BP", "Status", "Date", "Ref. Num",
-                              "Currency", "Doc. Total", "User", "Created Date", "Control"]
+            mandatory_cols = ["Doc_Num", "Doc_Group", "BP", "Status", "Date", "Ref_Num",
+                              "Currency", "Doc_Total", "User", "Created Date", "Control"]
 
 
             missing_cols = [col for col in mandatory_cols if col not in df_excel.columns]
@@ -199,13 +199,13 @@ with tab_add:
 
                 for i, row in df_excel.iterrows():
                     try:
-                        po_number = str(row["Doc. Num"]).strip()
-                        doc_group = str(row["Doc. Group"]).strip()
+                        po_number = str(row["Doc_Num"]).strip()
+                        doc_group = str(row["Doc_Group"]).strip()
                         supplier = str(row["BP"]).strip()
                         status = str(row["Status"]).strip()
-                        ref_num = str(row["Ref. Num"]).strip()
+                        ref_num = str(row["Ref_Num"]).strip()
                         currency = str(row["Currency"]).strip()
-                        doc_total = str(row["Doc. Total"]).strip()
+                        doc_total = str(row["Doc_Total"]).strip()
                         user = str(row["User"]).strip()
                         control = str(row["Control"]).strip()
                         notes = ""  # Kalau kolom notes tidak ada, beri kosong
@@ -269,7 +269,7 @@ with tab_monitor:
     else:
         df_display = df.copy()
         df_display["alert"] = df_display.apply(lambda r: get_alert(r, today), axis=1)
-        st.dataframe(df_display[['Doc. Num', 'BP', 'Date', 'Status', 'alert']].sort_values(by=['Date', 'Doc. Num'], ascending=False))
+        st.dataframe(df_display[['Doc_Num', 'BP', 'Date', 'Status', 'alert']].sort_values(by=['Date', 'Doc_Num'], ascending=False))
 
 with tab_manage:
     st.subheader("Kelola PO")
@@ -282,14 +282,14 @@ with tab_manage:
             order = df[df["id"] == selected_id].iloc[0]
 
             # contoh di tab_manage
-            st.write(f"**Doc. Num:** {order['Doc. Num']}")
-            st.write(f"**Doc. Group:** {order['Doc. Group']}")
+            st.write(f"** Num:** {order['Doc_Num']}")
+            st.write(f"**Doc. Group:** {order['Doc_Group']}")
             st.write(f"**BP (Supplier):** {order['BP']}")
             st.write(f"**Status:** {order['Status']}")
             st.write(f"**Date (Tanggal PO):** {order['Date']}")
-            st.write(f"**Ref. Num:** {order['Ref. Num']}")
+            st.write(f"**Ref. Num:** {order['Ref_Num']}")
             st.write(f"**Currency:** {order['Currency']}")
-            st.write(f"**Doc. Total:** {order['Doc. Total']}")
+            st.write(f"**Doc. Total:** {order['Doc_Total']}")
             st.write(f"**User:** {order['User']}")
             st.write(f"**Created Date:** {order['Created Date']}")
             st.write(f"**Control:** {order['Control']}")
