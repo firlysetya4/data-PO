@@ -51,7 +51,7 @@ def add_order(values):
     with connect_db() as conn:
         conn.execute("""
             INSERT INTO purchase_orders
-            ("Doc_Num", "Doc_Group", "BP", "Status", "Date", "Ref_Num",
+            ("Doc_Num", "Doc_Group", "BP", "Status", "Date", "Ref_Num", "Currency",
             "Doc_Total", "User", "Created_Date", "Control",
              "eta_start", "eta_end", "reminder_date", "notes")
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -181,86 +181,91 @@ with tab_add:
     st.subheader("📁 Upload data PO dari file Excel (.xls / .xlsx)")
     uploaded_file = st.file_uploader("Pilih file Excel", type=["xls", "xlsx"])
 
-    if uploaded_file:
-        try:
-            df_excel = pd.read_excel(uploaded_file)
-            # Normalisasi kolom
-            df_excel.columns = df_excel.columns.str.strip()
 
-            mandatory_cols = ["Doc_Num", "Doc_Group", "BP", "Status", "Date", "Ref_Num",
-                              "Doc_Total", "User", "Created_Date", "Control"]
+if uploaded_file:
+    try:
+        df_excel = pd.read_excel(uploaded_file)
+        mapping = {
+            "Doc_Num": "doc_num",
+            "Doc. Group": "doc_group",
+            "BP": "bp",
+            "Status": "status",
+            "Date": "date",
+            "Ref. Num": "ref_num",
+            "Currency": "currency",
+            "Doc. Total": "doc_total",
+            "User": "user",
+            "Created Date": "created_date",
+            "Control": "control",
+            "Notes": "notes"
+        }
+        df_excel.rename(columns=mapping, inplace=True)
+        df_excel.columns = df_excel.columns.str.strip()
 
+        mandatory_cols = list(mapping.values())
 
-            missing_cols = [col for col in mandatory_cols if col not in df_excel.columns]
-            if missing_cols:
-                st.error(f"File Excel harus mengandung kolom: {', '.join(mandatory_cols)}. Kolom hilang: {', '.join(missing_cols)}")
-            else:
-                success_count = 0
-                error_rows = []
+        missing_cols = [col for col in mandatory_cols if col not in df_excel.columns]
+        if missing_cols:
+            st.error(f"File Excel harus mengandung kolom: {', '.join(mandatory_cols)}. Kolom hilang: {', '.join(missing_cols)}")
+        else:
+            success_count = 0
+            error_rows = []
 
-                for i, row in df_excel.iterrows():
-                    try:
-                        po_number = str(row["Doc_Num"]).strip()
-                        doc_group = str(row["Doc_Group"]).strip()
-                        supplier = str(row["BP"]).strip()
-                        status = str(row["Status"]).strip()
-                        ref_num = str(row["Ref_Num"]).strip()
-                        doc_total = str(row["Doc_Total"]).strip()
-                        user = str(row["User"]).strip()
-                        control = str(row["Control"]).strip()
-                        notes = ""  # Kalau kolom notes tidak ada, beri kosong
-                        
-                        # Parsing tanggal Date
-                        date_val = row["Date"]
-                        if pd.isna(date_val):
-                            raise ValueError("Tanggal PO kosong/tidak valid")
-                        elif isinstance(date_val, (datetime, pd.Timestamp)):
-                            po_date = date_val.date()
-                        else:
-                            po_date_parsed = pd.to_datetime(date_val, errors="coerce", dayfirst=True)
-                            if pd.isna(po_date_parsed):
-                                raise ValueError("Tanggal PO tidak valid")
-                            po_date = po_date_parsed.date()
-                        
-                        # Parsing  (optional)
-                        created_date_val = row["Created_Date"]
-                        if pd.isna(created_date_val):
-                            created_date_iso = datetime.now().isoformat()
-                        else:
-                            created_date_iso = pd.to_datetime(created_date_val).isoformat()
-                        
-                        # Hitung ETA dll berdasarkan status (atau urgency jika mau)
-                        if status.lower() == "urgent":
-                            eta_start = po_date + timedelta(days=10)
-                            eta_end = po_date + timedelta(days=14)
-                            reminder_date = po_date + timedelta(days=8)
-                        else:
-                            eta_start = po_date + timedelta(days=14)
-                            eta_end = po_date + timedelta(days=21)
-                            reminder_date = po_date + timedelta(days=12)
-                        
-                        add_order((
-                            po_number, doc_group, supplier, status, po_date.isoformat(),
-                            ref_num, doc_total, user, created_date_iso,
-                            control, eta_start.isoformat(), eta_end.isoformat(), reminder_date.isoformat(), notes
-                        ))
+            for i, row in df_excel.iterrows():
+                try:
+                    po_number = str(row["doc_num"]).strip()
+                    doc_group = str(row["doc_group"]).strip()
+                    supplier = str(row["bp"]).strip()
+                    status = str(row["status"]).strip()
+                    ref_num = str(row["ref_num"]).strip()
+                    currency = str(row["currency"]).strip()
+                    doc_total = str(row["doc_total"]).strip()
+                    user = str(row["user"]).strip()
+                    control = str(row["control"]).strip()
+                    notes = str(row["notes"]) if "notes" in df_excel.columns else ""
 
-                        success_count += 1
+                    date_val = row["date"]
+                    if pd.isna(date_val):
+                        raise ValueError("Tanggal PO kosong/tidak valid")
+                    po_date = pd.to_datetime(date_val).date()
 
-                    except Exception as e:
-                        error_rows.append((i + 2, str(e)))
+                    created_date_val = row["created_date"]
+                    if pd.isna(created_date_val):
+                        created_date_iso = datetime.now().isoformat()
+                    else:
+                        created_date_iso = pd.to_datetime(created_date_val).isoformat()
 
-                if success_count:
-                    st.success(f"Berhasil menambahkan {success_count} PO dari file Excel.")
-                if error_rows:
-                    st.error("Beberapa baris gagal diproses:")
-                    for err in error_rows:
-                        st.write(f"- Baris {err[0]}: {err[1]}")
+                    # Hitung ETA dan reminder simpan ke db (sesuai prioritas)
+                    if status.lower() == "urgent":
+                        eta_start = po_date + timedelta(days=10)
+                        eta_end = po_date + timedelta(days=14)
+                        reminder_date = po_date + timedelta(days=8)
+                    else:
+                        eta_start = po_date + timedelta(days=14)
+                        eta_end = po_date + timedelta(days=21)
+                        reminder_date = po_date + timedelta(days=12)
 
-                st.rerun()
+                    add_order((
+                        po_number, doc_group, supplier, status, po_date.isoformat(),
+                        ref_num, currency, doc_total, user, created_date_iso, control,
+                        eta_start.isoformat(), eta_end.isoformat(), reminder_date.isoformat(), notes
+                    ))
 
-        except Exception as err:
-            st.error(f"Gagal membaca file Excel: {err}")
+                    success_count += 1
+                except Exception as e:
+                    error_rows.append((i + 2, str(e)))
+
+            if success_count:
+                st.success(f"Berhasil menambahkan {success_count} PO dari file Excel.")
+            if error_rows:
+                st.error("Beberapa baris gagal diproses:")
+                for err in error_rows:
+                    st.write(f"- Baris {err[0]}: {err[1]}")
+
+            st.rerun()
+    except Exception as err:
+        st.error(f"Gagal membaca file Excel: {err}")
+
 
 with tab_monitor:
     st.subheader("Daftar PO dan Reminder")
