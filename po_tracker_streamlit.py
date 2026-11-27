@@ -52,7 +52,7 @@ def add_order(values):
         conn.execute("""
             INSERT INTO purchase_orders
             ("Doc_Num", "Doc_Group", "BP", "Status", "Date", "Ref_Num",
-            "Doc_Total", "User", "Created Date", "Control",
+            "Doc_Total", "User", "Created_Date", "Control",
              "eta_start", "eta_end", "reminder_date", "notes")
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, values)
@@ -188,7 +188,7 @@ with tab_add:
             df_excel.columns = df_excel.columns.str.strip()
 
             mandatory_cols = ["Doc_Num", "Doc_Group", "BP", "Status", "Date", "Ref_Num",
-                              "Doc_Total", "User", "Created Date", "Control"]
+                              "Doc_Total", "User", "Created_Date", "Control"]
 
 
             missing_cols = [col for col in mandatory_cols if col not in df_excel.columns]
@@ -222,8 +222,8 @@ with tab_add:
                                 raise ValueError("Tanggal PO tidak valid")
                             po_date = po_date_parsed.date()
                         
-                        # Parsing Created Date (optional)
-                        created_date_val = row["Created Date"]
+                        # Parsing  (optional)
+                        created_date_val = row["Created_Date"]
                         if pd.isna(created_date_val):
                             created_date_iso = datetime.now().isoformat()
                         else:
@@ -290,7 +290,7 @@ with tab_manage:
             st.write(f"**Ref. Num:** {order['Ref_Num']}")
             st.write(f"**Doc. Total:** {order['Doc_Total']}")
             st.write(f"**User:** {order['User']}")
-            st.write(f"**Created Date:** {order['Created Date']}")
+            st.write(f"**Created_Date:** {order['Created_Date']}")
             st.write(f"**Control:** {order['Control']}")
             st.write(f"**Notes:** {order['notes']}")
 
