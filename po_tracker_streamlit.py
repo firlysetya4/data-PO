@@ -20,20 +20,16 @@ def init_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS purchase_orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                po_number TEXT NOT NULL,
-                supplier TEXT NOT NULL,
-                item_name TEXT NOT NULL,
-                quantity REAL NOT NULL,
-                unit TEXT NOT NULL,
-                po_date TEXT NOT NULL,
-                urgency TEXT NOT NULL,
-                eta_start TEXT NOT NULL,
-                eta_end TEXT NOT NULL,
-                reminder_date TEXT NOT NULL,
-                status TEXT NOT NULL DEFAULT 'Menunggu',
-                arrived_date TEXT,
-                notes TEXT,
-                created_at TEXT NOT NULL
+                Doc. Num TEXT NOT NULL,
+                Doc. Group TEXT NOT NULL,
+                BP TEXT NOT NULL,
+                Status	Date REAL NOT NULL,
+                Ref. Num TEXT NOT NULL,
+                Currency TEXT NOT NULL,
+                Doc. Total TEXT NOT NULL,
+                User TEXT NOT NULL,
+                Created Date TEXT NOT NULL,
+                Control TEXT NOT NULL,
             )
         """)
         conn.commit()
@@ -47,8 +43,7 @@ def add_order(values):
     with connect_db() as conn:
         conn.execute("""
             INSERT INTO purchase_orders
-            (po_number, supplier, item_name, quantity, unit, po_date, urgency,
-             eta_start, eta_end, reminder_date, status, arrived_date, notes, created_at)
+            (Doc. Num, Doc. Group, BP, Status, Date, Ref. Num, Currency, Doc. Total, User, Created Date, Controlt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Menunggu', NULL, ?, ?)
         """, (*values, datetime.now().isoformat(timespec="seconds")))
         conn.commit()
