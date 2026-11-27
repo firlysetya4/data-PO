@@ -1,4 +1,0 @@
-streamlit 
-pandas 
-pip install openpyxl
-datetime
