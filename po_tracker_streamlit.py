@@ -161,7 +161,8 @@ with tab_add:
                     notes.strip()
                 ))
                 st.success("PO berhasil disimpan.")
-                st.experimental_rerun()
+                st.rerun()
+
 
     st.markdown("---")
     st.subheader("📁 Upload data PO dari file Excel (.xls / .xlsx)")
