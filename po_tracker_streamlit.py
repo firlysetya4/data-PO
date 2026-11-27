@@ -240,7 +240,7 @@ with tab_add:
                     for err in error_rows:
                         st.write(f"- Baris {err[0]}: {err[1]}")
             
-                st.experimental_rerun()
+                st.rerun()
 
 
         except Exception as err:
@@ -286,11 +286,11 @@ with tab_manage:
             if st.button("Simpan perubahan status"):
                 update_status(selected_id, new_status)
                 st.success("Status berhasil diperbarui.")
-                st.experimental_rerun()
+                st.rerun()
 
             if st.button("Hapus PO ini"):
                 delete_order(selected_id)
                 st.success("PO berhasil dihapus.")
-                st.experimental_rerun()
+                st.rerun())
 
 
