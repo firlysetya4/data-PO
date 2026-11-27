@@ -171,74 +171,75 @@ with tab_add:
         try:
             df_excel = pd.read_excel(uploaded_file)
             df_excel.columns = df_excel.columns.str.strip().str.lower()
+            
 
-        mandatory_cols = ["doc. num", "doc. group", "bp", "status", "date", "ref. num",
-                          "currency", "doc. total", "user", "created date", "control"]
-        
-        # Pastikan header Excel sudah lowercase dan strip whitespace
-        df_excel.columns = df_excel.columns.str.strip().str.lower()
-        
-        missing_cols = [col for col in mandatory_cols if col not in df_excel.columns]
-        if missing_cols:
-            st.error(f"File Excel harus mengandung kolom: {', '.join(mandatory_cols)}. Kolom hilang: {', '.join(missing_cols)}")
-        else:
-            success_count = 0
-            error_rows = []
-        
-            for i, row in df_excel.iterrows():
-                try:
-                    # Parsing tanggal dari kolom "date"
-                    date_val = row.get("date")
-                    if pd.isna(date_val):
-                        po_date = None
-                    elif isinstance(date_val, (datetime, pd.Timestamp)):
-                        po_date = date_val.date()
-                    else:
-                        po_date_parsed = pd.to_datetime(date_val, errors='coerce', dayfirst=True)
-                        po_date = po_date_parsed.date() if not pd.isna(po_date_parsed) else None
-        
-                    po_number = str(row.get("doc. num", "")).strip()
-                    doc_group = str(row.get("doc. group", "")).strip()
-                    supplier = str(row.get("bp", "")).strip()
-                    status = str(row.get("status", "Menunggu")).strip()
-                    ref_num = str(row.get("ref. num", "")).strip()
-                    currency = str(row.get("currency", "")).strip()
-                    doc_total = str(row.get("doc. total", "")).strip()
-                    user = str(row.get("user", "")).strip()
-                    created_date_val = row.get("created date")
-                    created_date = created_date_val if pd.isna(created_date_val) else str(created_date_val)
-                    control = str(row.get("control", "")).strip()
-        
-                    # Quantity, unit, urgency, notes - tambahkan sesuai kebutuhan jika ada di Excel
-                    quantity = 0
-                    unit = "-"
-                    urgency = "Normal"
-                    notes = ""
-        
-                    if not po_number:
-                        raise ValueError("Doc. Num kosong")
-                    if not supplier:
-                        raise ValueError("BP (Supplier) kosong")
-                    if not po_date:
-                        raise ValueError("Tanggal PO tidak valid")
-        
-                    # Masukkan data ke database
-                    add_order((
-                        po_number, doc_group, supplier, status, po_date.isoformat(), ref_num,
-                        currency, doc_total, user, created_date, control
-                    ))
-                    success_count += 1
-                except Exception as e:
-                    error_rows.append((i + 2, str(e)))  # +2 karena header + index mulai 0
-        
-            if success_count:
-                st.success(f"Berhasil menambahkan {success_count} PO dari file Excel.")
-            if error_rows:
-                st.error("Beberapa baris gagal diproses:")
-                for err in error_rows:
-                    st.write(f"- Baris {err[0]}: {err[1]}")
-        
-            st.experimental_rerun()
+            mandatory_cols = ["doc. num", "doc. group", "bp", "status", "date", "ref. num",
+                              "currency", "doc. total", "user", "created date", "control"]
+            
+            # Pastikan header Excel sudah lowercase dan strip whitespace
+            df_excel.columns = df_excel.columns.str.strip().str.lower()
+            
+            missing_cols = [col for col in mandatory_cols if col not in df_excel.columns]
+            if missing_cols:
+                st.error(f"File Excel harus mengandung kolom: {', '.join(mandatory_cols)}. Kolom hilang: {', '.join(missing_cols)}")
+            else:
+                success_count = 0
+                error_rows = []
+            
+                for i, row in df_excel.iterrows():
+                    try:
+                        # Parsing tanggal dari kolom "date"
+                        date_val = row.get("date")
+                        if pd.isna(date_val):
+                            po_date = None
+                        elif isinstance(date_val, (datetime, pd.Timestamp)):
+                            po_date = date_val.date()
+                        else:
+                            po_date_parsed = pd.to_datetime(date_val, errors='coerce', dayfirst=True)
+                            po_date = po_date_parsed.date() if not pd.isna(po_date_parsed) else None
+            
+                        po_number = str(row.get("doc. num", "")).strip()
+                        doc_group = str(row.get("doc. group", "")).strip()
+                        supplier = str(row.get("bp", "")).strip()
+                        status = str(row.get("status", "Menunggu")).strip()
+                        ref_num = str(row.get("ref. num", "")).strip()
+                        currency = str(row.get("currency", "")).strip()
+                        doc_total = str(row.get("doc. total", "")).strip()
+                        user = str(row.get("user", "")).strip()
+                        created_date_val = row.get("created date")
+                        created_date = created_date_val if pd.isna(created_date_val) else str(created_date_val)
+                        control = str(row.get("control", "")).strip()
+            
+                        # Quantity, unit, urgency, notes - tambahkan sesuai kebutuhan jika ada di Excel
+                        quantity = 0
+                        unit = "-"
+                        urgency = "Normal"
+                        notes = ""
+            
+                        if not po_number:
+                            raise ValueError("Doc. Num kosong")
+                        if not supplier:
+                            raise ValueError("BP (Supplier) kosong")
+                        if not po_date:
+                            raise ValueError("Tanggal PO tidak valid")
+            
+                        # Masukkan data ke database
+                        add_order((
+                            po_number, doc_group, supplier, status, po_date.isoformat(), ref_num,
+                            currency, doc_total, user, created_date, control
+                        ))
+                        success_count += 1
+                    except Exception as e:
+                        error_rows.append((i + 2, str(e)))  # +2 karena header + index mulai 0
+            
+                if success_count:
+                    st.success(f"Berhasil menambahkan {success_count} PO dari file Excel.")
+                if error_rows:
+                    st.error("Beberapa baris gagal diproses:")
+                    for err in error_rows:
+                        st.write(f"- Baris {err[0]}: {err[1]}")
+            
+                st.experimental_rerun()
 
 
         except Exception as err:
