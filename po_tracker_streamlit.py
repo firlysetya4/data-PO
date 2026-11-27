@@ -172,73 +172,74 @@ with tab_add:
             df_excel = pd.read_excel(uploaded_file)
             df_excel.columns = df_excel.columns.str.strip().str.lower()
 
-            mandatory_cols = ["tgl", "supplier", "jenis plastik", "no. po", "order-kg maksimal", "urgent atau tidak", "noted"]
-            missing_cols = [col for col in mandatory_cols if col not in df_excel.columns]
-            if missing_cols:
-                st.error(f"File Excel harus mengandung kolom: {', '.join(mandatory_cols)}. Kolom hilang: {', '.join(missing_cols)}")
-            else:
-                success_count = 0
-                error_rows = []
+        mandatory_cols = ["doc. num", "doc. group", "bp", "status", "date", "ref. num",
+                          "currency", "doc. total", "user", "created date", "control"]
+        
+        # Pastikan header Excel sudah lowercase dan strip whitespace
+        df_excel.columns = df_excel.columns.str.strip().str.lower()
+        
+        missing_cols = [col for col in mandatory_cols if col not in df_excel.columns]
+        if missing_cols:
+            st.error(f"File Excel harus mengandung kolom: {', '.join(mandatory_cols)}. Kolom hilang: {', '.join(missing_cols)}")
+        else:
+            success_count = 0
+            error_rows = []
+        
+            for i, row in df_excel.iterrows():
+                try:
+                    # Parsing tanggal dari kolom "date"
+                    date_val = row.get("date")
+                    if pd.isna(date_val):
+                        po_date = None
+                    elif isinstance(date_val, (datetime, pd.Timestamp)):
+                        po_date = date_val.date()
+                    else:
+                        po_date_parsed = pd.to_datetime(date_val, errors='coerce', dayfirst=True)
+                        po_date = po_date_parsed.date() if not pd.isna(po_date_parsed) else None
+        
+                    po_number = str(row.get("doc. num", "")).strip()
+                    doc_group = str(row.get("doc. group", "")).strip()
+                    supplier = str(row.get("bp", "")).strip()
+                    status = str(row.get("status", "Menunggu")).strip()
+                    ref_num = str(row.get("ref. num", "")).strip()
+                    currency = str(row.get("currency", "")).strip()
+                    doc_total = str(row.get("doc. total", "")).strip()
+                    user = str(row.get("user", "")).strip()
+                    created_date_val = row.get("created date")
+                    created_date = created_date_val if pd.isna(created_date_val) else str(created_date_val)
+                    control = str(row.get("control", "")).strip()
+        
+                    # Quantity, unit, urgency, notes - tambahkan sesuai kebutuhan jika ada di Excel
+                    quantity = 0
+                    unit = "-"
+                    urgency = "Normal"
+                    notes = ""
+        
+                    if not po_number:
+                        raise ValueError("Doc. Num kosong")
+                    if not supplier:
+                        raise ValueError("BP (Supplier) kosong")
+                    if not po_date:
+                        raise ValueError("Tanggal PO tidak valid")
+        
+                    # Masukkan data ke database
+                    add_order((
+                        po_number, doc_group, supplier, status, po_date.isoformat(), ref_num,
+                        currency, doc_total, user, created_date, control
+                    ))
+                    success_count += 1
+                except Exception as e:
+                    error_rows.append((i + 2, str(e)))  # +2 karena header + index mulai 0
+        
+            if success_count:
+                st.success(f"Berhasil menambahkan {success_count} PO dari file Excel.")
+            if error_rows:
+                st.error("Beberapa baris gagal diproses:")
+                for err in error_rows:
+                    st.write(f"- Baris {err[0]}: {err[1]}")
+        
+            st.experimental_rerun()
 
-                for i, row in df_excel.iterrows():
-                    try:
-                        po_date_val = row["tgl"]
-
-                        if pd.isna(po_date_val):
-                            po_date = None
-                        elif isinstance(po_date_val, (datetime, pd.Timestamp)):
-                            po_date = po_date_val.date()
-                        else:
-                            po_date_parsed = pd.to_datetime(po_date_val, errors="coerce", dayfirst=True)
-                            po_date = po_date_parsed.date() if not pd.isna(po_date_parsed) else None
-
-                        po_number = str(row.get("no. po", "")).strip()
-                        supplier = str(row.get("supplier", "")).strip()
-                        item_name = str(row.get("jenis plastik", "")).strip()
-                        quantity = pd.to_numeric(row.get("order-kg maksimal", 0), errors="coerce")
-                        quantity = float(quantity) if not pd.isna(quantity) and quantity > 0 else 0
-                        urgency_raw = str(row.get("urgent atau tidak", "")).lower()
-                        urgency = "Urgent" if "urgent" in urgency_raw else "Normal"
-                        notes = str(row.get("noted", "")).strip()
-                        unit = "Kg"
-
-                        if not po_number:
-                            raise ValueError("Nomor PO kosong")
-                        if not supplier:
-                            raise ValueError("Supplier kosong")
-                        if quantity <= 0:
-                            raise ValueError("Quantity harus > 0")
-                        if not po_date:
-                            raise ValueError("Tanggal PO tidak valid")
-
-                        if urgency == "Urgent":
-                            eta_start = po_date + timedelta(days=10)
-                            eta_end = po_date + timedelta(days=14)
-                            reminder_date = po_date + timedelta(days=8)
-                        else:
-                            eta_start = po_date + timedelta(days=14)
-                            eta_end = po_date + timedelta(days=21)
-                            reminder_date = po_date + timedelta(days=12)
-
-                        add_order((
-                            po_number, supplier, item_name,
-                            quantity, unit,
-                            po_date.isoformat(), urgency,
-                            eta_start.isoformat(), eta_end.isoformat(), reminder_date.isoformat(),
-                            notes
-                        ))
-                        success_count += 1
-                    except Exception as e:
-                        error_rows.append((i + 2, str(e)))
-
-                if success_count:
-                    st.success(f"Berhasil menambahkan {success_count} PO dari file Excel.")
-                if error_rows:
-                    st.error("Beberapa baris gagal diproses:")
-                    for err in error_rows:
-                        st.write(f"- Baris {err[0]}: {err[1]}")
-
-                st.experimental_rerun()
 
         except Exception as err:
             st.error(f"Gagal membaca file Excel: {err}")
@@ -260,32 +261,34 @@ with tab_manage:
     if df.empty:
         st.info("Belum ada data PO untuk dikelola.")
     else:
-        selected_id = st.selectbox("Pilih PO berdasarkan ID", df["id"])
+        selected_id = st.selectbox("Pilih PO berdasarkan ID", df["id"].tolist())
 
-if selected_id:
-    order = df[df["id"] == selected_id].iloc[0]
+        if selected_id is not None:
+            order = df[df["id"] == selected_id].iloc[0]
 
-    st.write(f"**Nomor PO:** {order['Doc. Num']}")
-    st.write(f"**Doc. Group:** {order['Doc. Group']}")
-    st.write(f"**Supplier (BP):** {order['BP']}")
-    st.write(f"**Status:** {order['Status']}")
-    st.write(f"**Tanggal PO:** {order['Date']}")
-    st.write(f"**Ref. Num:** {order['Ref. Num']}")
-    st.write(f"**Currency:** {order['Currency']}")
-    st.write(f"**Doc. Total:** {order['Doc. Total']}")
-    st.write(f"**User:** {order['User']}")
-    st.write(f"**Created Date:** {order['Created Date']}")
-    st.write(f"**Control:** {order['Control']}")
+            st.write(f"**Doc. Num:** {order['Doc. Num']}")
+            st.write(f"**Doc. Group:** {order['Doc. Group']}")
+            st.write(f"**BP (Supplier):** {order['BP']}")
+            st.write(f"**Status:** {order['Status']}")
+            st.write(f"**Date (Tanggal PO):** {order['Date']}")
+            st.write(f"**Ref. Num:** {order['Ref. Num']}")
+            st.write(f"**Currency:** {order['Currency']}")
+            st.write(f"**Doc. Total:** {order['Doc. Total']}")
+            st.write(f"**User:** {order['User']}")
+            st.write(f"**Created Date:** {order['Created Date']}")
+            st.write(f"**Control:** {order['Control']}")
 
-    new_status = st.selectbox("Update status PO", ["Menunggu", "Sudah Datang", "Dibatalkan"], index=["Menunggu", "Sudah Datang", "Dibatalkan"].index(order["Status"]))
+            new_status = st.selectbox("Update status PO", ["Menunggu", "Sudah Datang", "Dibatalkan"],
+                                      index=["Menunggu", "Sudah Datang", "Dibatalkan"].index(order["Status"]))
 
-    if st.button("Simpan perubahan status"):
-        update_status(selected_id, new_status)
-        st.success("Status berhasil diperbarui.")
-        st.experimental_rerun()
+            if st.button("Simpan perubahan status"):
+                update_status(selected_id, new_status)
+                st.success("Status berhasil diperbarui.")
+                st.experimental_rerun()
 
-    if st.button("Hapus PO ini"):
-        delete_order(selected_id)
-        st.success("PO berhasil dihapus.")
-        st.experimental_rerun()
+            if st.button("Hapus PO ini"):
+                delete_order(selected_id)
+                st.success("PO berhasil dihapus.")
+                st.experimental_rerun()
+
 
